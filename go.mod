@@ -1,4 +1,4 @@
-module github.com/zxcv32/capture-maps-api
+module github.com/zxcv32/capture-maps
 
 go 1.19
 

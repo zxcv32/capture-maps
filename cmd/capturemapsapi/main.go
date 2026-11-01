@@ -5,7 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/zxcv32/capture-maps-api/internal/service"
+	"github.com/zxcv32/capture-maps/internal/service"
 )
 
 func main() {

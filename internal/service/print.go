@@ -9,8 +9,8 @@ import (
 
 	gim "github.com/ozankasikci/go-image-merge"
 	log "github.com/sirupsen/logrus"
-	"github.com/zxcv32/capture-maps-api/pkg/earth"
-	"github.com/zxcv32/capture-maps-api/pkg/file"
+	"github.com/zxcv32/capture-maps/pkg/earth"
+	"github.com/zxcv32/capture-maps/pkg/file"
 )
 
 // printRequest struct to accept print request
