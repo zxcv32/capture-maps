@@ -1,9 +1,13 @@
-# Capture Maps Backend API
+# Capture Maps
+
+Monorepo for Capture Maps: a backend API (this directory) and its [frontend](./ui) UI.
+
+## Backend API
 
 This API captures detailed images of an area
 using [Google Maps Static API](https://developers.google.com/maps/documentation/maps-static/overview)
 
-> This API is intended to be consumed by [Capture Maps UI](https://github.com/zxcV32/capture-maps-ui). However, it is may be consumed by other systems as is.
+> This API is intended to be consumed by the UI in [`./ui`](./ui). However, it may be consumed by other systems as is.
 
 ## Setup
 
