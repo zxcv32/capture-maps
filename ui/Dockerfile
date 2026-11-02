@@ -1,6 +1,6 @@
-FROM node:18-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
-ENV PATH /app/node_modules/.bin:$PATH
+ENV PATH=/app/node_modules/.bin:$PATH
 # Cache and Install dependencies
 COPY package.json .
 COPY package-lock.json .
@@ -10,12 +10,12 @@ COPY . ./
 # Args passed on build phase
 ARG GOOGLE_MAPS_API_KEY
 ARG API_HOST
-ENV REACT_APP_GOOGLE_MAPS_API_KEY $GOOGLE_MAPS_API_KEY
-ENV REACT_APP_API_HOST $API_HOST
+ENV REACT_APP_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
+ENV REACT_APP_API_HOST=$API_HOST
 RUN npm run build
 
 
-FROM nginx:1.23.3-alpine
+FROM nginx:1.31.8-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

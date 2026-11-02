@@ -50,14 +50,20 @@ function Map({
       const newCenter = mapref.getCenter();
       setDisplayLat(parseFloat(newCenter.lat().toFixed(6)));
       setDisplayLng(parseFloat(newCenter.lng().toFixed(6)));
-      setMapZoom(mapref.zoom);
-      setFormZoom(mapref.zoom);
     }
   };
 
+  function handleOnZoomChanged() {
+    if (mapref) {
+      const zoom = mapref.getZoom();
+      setMapZoom(zoom);
+      setFormZoom(zoom);
+    }
+  }
+
   function handleOnMapTypeIdChanged() {
     if (mapref) {
-      setMapTypeId(mapref.mapTypeId);
+      setMapTypeId(mapref.getMapTypeId());
     }
   }
 
@@ -66,6 +72,7 @@ function Map({
                  mapContainerStyle={containerStyle} mapTypeId="hybrid"
                  onLoad={handleOnLoad}
                  onCenterChanged={handleCenterChanged}
+                 onZoomChanged={handleOnZoomChanged}
                  onMapTypeIdChanged={handleOnMapTypeIdChanged}
       ></GoogleMap>
   )

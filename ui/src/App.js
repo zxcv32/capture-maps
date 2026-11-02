@@ -10,6 +10,8 @@ import Tooltip from 'react-bootstrap/Tooltip'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import {Col, Container, Row} from "react-bootstrap";
 
+const REQUEST_TIMEOUT_MS = 45000;
+
 function App() {
   const [displayLat, setDisplayLat] = useState(specs.lat)
   const [displayLng, setDisplayLng] = useState(specs.lng)
@@ -31,6 +33,11 @@ function App() {
     if (disable) {
       return;
     }
+    if (!process.env.REACT_APP_API_HOST) {
+      setDisplayError("App misconfigured: REACT_APP_API_HOST is not set.");
+      setDisplayErrorShow(true);
+      return;
+    }
     let data = {
       lat: displayLat,
       lng: displayLng,
@@ -39,18 +46,25 @@ function App() {
       mapTypeId: mapTypeId
     }
     setDisable(true);
+    setDisplayErrorShow(false);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let handledByResponse = false;
 
     const requestOptions = {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       mode: 'cors',
       body: JSON.stringify(data),
+      signal: controller.signal,
     };
     const url = process.env.REACT_APP_API_HOST + "/print"
     await fetch(url, requestOptions)  // blocking action
     .then((response) => {
       if (!response.ok) {
         return response.text().then(text => {
+          handledByResponse = true;
           setDisplayError(text);
           setDisplayErrorShow(true);
           throw new Error(text);
@@ -71,7 +85,17 @@ function App() {
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
-    }).catch(() => {
+      window.URL.revokeObjectURL(url);
+    }).catch((error) => {
+      if (handledByResponse) {
+        return;
+      }
+      setDisplayError(error.name === 'AbortError'
+          ? "Request timed out, please try again."
+          : "Request failed. Check your connection and try again.");
+      setDisplayErrorShow(true);
+    }).finally(() => {
+      clearTimeout(timeoutId);
     });
     setDisable(false)
   }
@@ -128,7 +152,7 @@ function App() {
               }
           >
             <label>Capture Zoom Level&nbsp;
-              <input type="number" placeholder={defaultZoom.toString()}
+              <input type="number" min={0} max={21} placeholder={defaultZoom.toString()}
                      defaultValue={formZoom.toString()}
                      onChange={(e) => {
                        setFormZoom(parseInt(e.target.value))
