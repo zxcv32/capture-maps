@@ -19,6 +19,10 @@ import (
 // (~$0.16 at Google's $2/1000 rate) instead of the previous 841.
 const maxRadius = 5
 
+// maxRequestBodyBytes caps the incoming JSON body; the real payload is a
+// handful of numbers and a short string, so this is generous headroom.
+const maxRequestBodyBytes = 4 << 10 // 4KiB
+
 // printRequest struct to accept print request
 type printRequest struct {
 	Lat       float64 `json:"lat"`
@@ -45,7 +49,7 @@ func PrintHandler(apiKey string) http.HandlerFunc {
 		}
 		var requestId = rand.Int()
 		log.Printf("Print request received: %d", requestId)
-		body := request.Body
+		body := http.MaxBytesReader(writer, request.Body, maxRequestBodyBytes)
 		decoder := json.NewDecoder(body)
 		var task printRequest
 		err := decoder.Decode(&task)
@@ -64,7 +68,9 @@ func PrintHandler(apiKey string) http.HandlerFunc {
 		}
 		filename, err := captureTiles(lat, lng, zoom, radius, mapTypeId, apiKey)
 		if err != nil {
-			http.Error(writer, err.Error(), 500)
+			log.Errorln(err)
+			http.Error(writer, "internal error", 500)
+			log.Printf("Print request not complete: %d", requestId)
 			return
 		}
 		fileBytes, err := ioutil.ReadFile(filename)
@@ -110,8 +116,21 @@ func validateRequest(lat float64, lng float64, zoom int, radius int, mapTypeId s
 	return nil
 }
 
+// effectiveRowRadius bounds how many tile rows north/south of centreTileY
+// are requested, so a large radius at low zoom (or near the poles, where a
+// row index can run out of [0,scale) tile rows quickly) can't produce
+// duplicate or wrapped rows. The centre row itself is always valid.
+func effectiveRowRadius(centreTileY int, scale int, radius int) int {
+	maxRows := min(centreTileY, scale-1-centreTileY) + 1
+	if maxRows < 1 {
+		maxRows = 1
+	}
+	return min(radius, maxRows)
+}
+
 func captureTiles(lat float64, lng float64, zoom int, radius int, mapTypeId string, apiKey string) (string, error) {
 	centreTileX, centreTileY, scale := earth.CalcCentreTile(lat, lng, zoom)
+	rowRadius := effectiveRowRadius(centreTileY, scale, radius)
 	var grids []*gim.Grid
 	latitudinalTiles := min(radius*2-1, scale)
 	var xIndex = centreTileX - (radius - 1)
@@ -123,14 +142,16 @@ func captureTiles(lat float64, lng float64, zoom int, radius int, mapTypeId stri
 		return "", err
 	}
 	gimGridCentre.ImageFilePath = path
-	j = centreTileY - radius
-	repeat := radius - 1
+	j = centreTileY - rowRadius
+	repeat := rowRadius - 1
 	for repeat > 0 {
 		repeat--
 		j++ // go from north to south towards centre
 		var gimGridNorth gim.Grid
 		path, err := westToEast(xIndex, j, lastXIndexTile, zoom, mapTypeId, apiKey)
 		if err != nil {
+			file.DeleteFiles(grids)
+			file.DeleteFile(gimGridCentre.ImageFilePath)
 			return "", err
 		}
 		gimGridNorth.ImageFilePath = path
@@ -140,20 +161,21 @@ func captureTiles(lat float64, lng float64, zoom int, radius int, mapTypeId stri
 	grids = append(grids, &gimGridCentre)
 
 	j = centreTileY // reset j
-	repeat = radius - 1
+	repeat = rowRadius - 1
 	for repeat > 0 {
 		repeat--
 		j++ // go south
 		var gimGridSouth gim.Grid
 		path, err := westToEast(xIndex, j, lastXIndexTile, zoom, mapTypeId, apiKey)
 		if err != nil {
+			file.DeleteFiles(grids)
 			return "", err
 		}
 		gimGridSouth.ImageFilePath = path
 		grids = append(grids, &gimGridSouth)
 	}
 
-	flashbang, err := file.Merge(grids, 1, radius*2-1)
+	flashbang, err := file.Merge(grids, 1, rowRadius*2-1)
 	file.DeleteFiles(grids)
 	if err != nil {
 		return "", err
@@ -169,6 +191,7 @@ func westToEast(xIndex int, j int, lastXIndexTile int, zoom int, mapTypeId strin
 		tileLng := earth.Tile2long(float64(i), zoom)
 		filename, err := earth.ComputeImage(tileLat, tileLng, zoom, mapTypeId, apiKey)
 		if err != nil {
+			file.DeleteFiles(grids)
 			return "", err
 		}
 		var gimGrid gim.Grid

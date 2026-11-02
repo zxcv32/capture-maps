@@ -6,7 +6,7 @@ import "math"
 func CalcCentreTile(lat float64, lng float64, zoom int) (int, int, int) {
 	scale := int(1) << uint(zoom)
 	worldCoordinateX, worldCoordinateY := project(lat, lng)
-	tileX := math.Floor((worldCoordinateX*float64(scale))/TileSize) + 1
+	tileX := math.Floor((worldCoordinateX * float64(scale)) / TileSize)
 	tileY := math.Floor((worldCoordinateY * float64(scale)) / TileSize)
 	return int(tileX), int(tileY), scale
 }

@@ -5,12 +5,15 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
+
+var httpClient = &http.Client{Timeout: 15 * time.Second}
 
 //DownloadImage The function downloads the image from the given URL
 func DownloadImage(URL string) (string, error) {
 	//Get the response bytes from the url
-	response, err := http.Get(URL)
+	response, err := httpClient.Get(URL)
 	if err != nil {
 		return "", err
 	}
