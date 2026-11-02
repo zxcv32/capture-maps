@@ -6,6 +6,7 @@ require (
 	github.com/ozankasikci/go-image-merge v0.2.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.12.0
+	golang.org/x/time v0.9.0
 )
 
 require (

@@ -143,12 +143,12 @@ function App() {
               overlay={
                 <Tooltip id="tooltip-radius">
                   Number of images in one direction. Total images =
-                  (2*radius-1)^2. [1,15]
+                  (2*radius-1)^2. [1,5]
                 </Tooltip>
               }
           >
             <label>Capture Tile Radius&nbsp;
-              <input type="number" placeholder={defaultRadius.toString()}
+              <input type="number" min={1} max={5} placeholder={defaultRadius.toString()}
                      defaultValue={formRadius.toString()}
                      onChange={(e) => {
                        setFormRadius(parseInt(e.target.value))

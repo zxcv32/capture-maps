@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -23,9 +24,15 @@ func main() {
 		log.Fatalln("Google Maps API Key not set")
 	}
 	http.HandleFunc("/", Home)
-	http.HandleFunc("/print", service.PrintHandler(apiKey))
+	http.HandleFunc("/print", service.RateLimit(service.PrintHandler(apiKey)))
 
-	http.ListenAndServe(":"+viper.GetString("server.port"), nil)
+	server := &http.Server{
+		Addr:         ":" + viper.GetString("server.port"),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second, // a full tile fan-out + merge can take a while
+		IdleTimeout:  60 * time.Second,
+	}
+	log.Fatal(server.ListenAndServe())
 }
 
 func Home(writer http.ResponseWriter, request *http.Request) {

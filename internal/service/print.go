@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -12,6 +13,11 @@ import (
 	"github.com/zxcv32/capture-maps/pkg/earth"
 	"github.com/zxcv32/capture-maps/pkg/file"
 )
+
+// maxRadius bounds the worst-case tile fan-out per request to
+// (2*maxRadius-1)^2 = 81 outbound Google Maps Static API calls
+// (~$0.16 at Google's $2/1000 rate) instead of the previous 841.
+const maxRadius = 5
 
 // printRequest struct to accept print request
 type printRequest struct {
@@ -86,8 +92,8 @@ func validateRequest(lat float64, lng float64, zoom int, radius int, mapTypeId s
 	if zoom < 0 || zoom > 21 {
 		return errors.New("invalid zoom. Possible set: [0,21]")
 	}
-	if radius < 1 || radius > 15 {
-		return errors.New("invalid radius. Possible set: [1,15]")
+	if radius < 1 || radius > maxRadius {
+		return fmt.Errorf("invalid radius. Possible set: [1,%d]", maxRadius)
 	}
 	switch mapTypeId {
 	case
