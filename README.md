@@ -18,7 +18,7 @@ using [Google Maps Static API](https://developers.google.com/maps/documentation/
    ```
 2. Run project
 
-   `go run src/main.go`
+   `go run ./cmd/capturemapsapi`
 
 ### Docker Dev
 Set `GOOGLE_MAPS_API_KEY` in deploy/docker-compose.yml
@@ -57,6 +57,11 @@ Access-Control-Allow-Origin: *
 Content-Type: image/png
 Transfer-Encoding: chunked
 ```
+
+### Limits
+
+- `radius` is capped at `5` (worst case `(2*5-1)^2 = 81` tiles per request) to bound outbound Google Maps API calls per request.
+- Each client IP is rate limited (a small burst, then throttled) to prevent a single caller from running up the Google Maps API bill.
 
 > What about the watermark?
 > According to [Google Maps Platform Terms of Service](https://cloud.google.com/maps-platform/terms),

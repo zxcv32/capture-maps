@@ -69,7 +69,10 @@ func PrintHandler(apiKey string) http.HandlerFunc {
 		}
 		fileBytes, err := ioutil.ReadFile(filename)
 		if err != nil {
-			panic(err)
+			log.Errorln(err)
+			http.Error(writer, "internal error", 500)
+			log.Printf("Print request not complete: %d", requestId)
+			return
 		}
 		writer.WriteHeader(http.StatusOK)
 		_, error := writer.Write(fileBytes)
@@ -150,8 +153,11 @@ func captureTiles(lat float64, lng float64, zoom int, radius int, mapTypeId stri
 		grids = append(grids, &gimGridSouth)
 	}
 
-	flashbang := file.Merge(grids, 1, radius*2-1)
+	flashbang, err := file.Merge(grids, 1, radius*2-1)
 	file.DeleteFiles(grids)
+	if err != nil {
+		return "", err
+	}
 	return flashbang, nil
 }
 
@@ -169,8 +175,11 @@ func westToEast(xIndex int, j int, lastXIndexTile int, zoom int, mapTypeId strin
 		gimGrid.ImageFilePath = filename
 		grids = append(grids, &gimGrid)
 	}
-	merged := file.Merge(grids, len(grids), 1)
+	merged, err := file.Merge(grids, len(grids), 1)
 	file.DeleteFiles(grids)
+	if err != nil {
+		return "", err
+	}
 	return merged, nil
 }
 
