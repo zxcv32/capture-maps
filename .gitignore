@@ -20,3 +20,10 @@ bin/*
 
 # Project
 configs/config.toml
+
+# Local, owner-specific agent context (never commit)
+AGENTS.local.md
+CLAUDE.local.md
+
+# Untracked owner notes (e.g. a separate private clone)
+.internal/
